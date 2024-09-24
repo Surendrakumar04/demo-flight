@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -26,7 +23,7 @@ public class SearchManager {
         SearchResult searchResult = null;
         try {
             setApplicableSourceId(searchQuery);
-           searchResult =  searchFromSources(searchQuery);
+            searchResult = searchFromSources(searchQuery);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -42,9 +39,11 @@ public class SearchManager {
      */
     private SearchResult searchFromSources(SearchQuery searchQuery) {
         List<Future<SearchResult>> futureTaskList = new ArrayList<>();
-        SearchResult searchResult = null;
-        for(Integer sourceId : searchQuery.getSourceIds()) {
+        SearchResult searchResult = SearchResult.builder().build();
+        for (Integer sourceId : searchQuery.getSourceIds()) {
             SourceType sourceType = SourceType.getSourceType(sourceId);
+            sourceType.getFactoryInstance(searchQuery);
+
             Callable<SearchResult> task = () -> {
                 AbstractSearchFactory searchFactory = sourceType.getFactoryInstance(searchQuery);
                 return searchFactory.doSearch();  // Perform the search asynchronously
@@ -52,30 +51,27 @@ public class SearchManager {
             futureTaskList.add(executor.submit(task));
         }
 
-        for(Future<SearchResult> futureTask : futureTaskList) {
+        for (Future<SearchResult> futureTask : futureTaskList) {
             try {
-                SearchResult result = futureTask.get();
-                if(searchResult == null) {
-                    searchResult = result;
-                } else {
-                    searchResult.getTripDetailsList().addAll(result.getTripDetailsList());
-                }
+                SearchResult result = futureTask.get(1000, TimeUnit.MILLISECONDS);
+                searchResult.getTripDetailsList().addAll(result.getTripDetailsList());
+
             } catch (Exception e) {
                 log.error("unable perform search for searchQuery : {}  with searchId : {} exception {}", searchResult.getSearchQuery(), searchResult.getSearchId(), e.getMessage());
                 throw new RuntimeException(e);
             }
         }
-        return null;
+        return searchResult;
     }
 
-    /** This can be configured from backend .
+    /**
+     * This can be configured from backend .
      * let's say you want to restrict some sourceId , means you can't search from sourceId 1 (Indigo)
      * Or set only the sourceId that you want to search among all the sourced that you have integrated
-     *
      */
 
     private void setApplicableSourceId(SearchQuery searchQuery) {
-        searchQuery.setSourceIds(Arrays.asList(1, 2, 3));
+        searchQuery.setSourceIds(Arrays.asList(1, 2));
 
     }
 }

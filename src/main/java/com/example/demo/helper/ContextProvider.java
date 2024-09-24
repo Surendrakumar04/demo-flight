@@ -5,8 +5,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-@Component
 @Getter
+@Component
 public class ContextProvider implements ApplicationContextAware {
 
     public static ApplicationContext applicationContext;

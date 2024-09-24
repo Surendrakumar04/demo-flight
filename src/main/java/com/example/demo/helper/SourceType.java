@@ -29,6 +29,7 @@ public enum SourceType {
     private int sourceId;
 
     SourceType(int sourceId) {
+        this.sourceId = sourceId;
     }
 
     public  static  SourceType getSourceType(int sourceId) {
