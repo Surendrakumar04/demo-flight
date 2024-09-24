@@ -8,11 +8,9 @@ import lombok.Data;
 public abstract class AbstractSearchFactory {
     private SearchQuery searchQuery;
 
-    // Default constructor, or no-args constructor can be added if needed
     public AbstractSearchFactory() {
     }
 
-    // Setter method for searchQuery
     public void setSearchQuery(SearchQuery searchQuery) {
         this.searchQuery = searchQuery;
     }
